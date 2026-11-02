@@ -545,12 +545,15 @@ function Ensure-Wix {
     if ($extensionListExitCode -notin @(0, 2)) {
         throw "Unable to list WiX extensions."
     }
-    if (-not ($extensions -match "WixToolset\.UI\.wixext")) {
+    foreach ($extension in @("WixToolset.UI.wixext", "WixToolset.Firewall.wixext")) {
+        if ($extensions -match [regex]::Escape($extension)) {
+            continue
+        }
         Invoke-Native `
             -FilePath $dotnetCommand.Source `
             -Arguments @(
                 "wix", "extension", "add",
-                "WixToolset.UI.wixext/7.0.0",
+                "$extension/7.0.0",
                 "-acceptEula", "wix7"
             )
     }
@@ -585,7 +588,8 @@ function Build-Artifacts {
                 "-arch", $architectureConfig.WixArchitecture,
                 "-out", $msi,
                 "-pdbtype", "none",
-                "-ext", "WixToolset.UI.wixext"
+                "-ext", "WixToolset.UI.wixext",
+                "-ext", "WixToolset.Firewall.wixext"
             )
         Invoke-Native `
             -FilePath $dotnet `

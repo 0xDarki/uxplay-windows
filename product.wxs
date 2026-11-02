@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:fw="http://wixtoolset.org/schemas/v4/wxs/firewall">
      
   <!-- version number is mayor.minor.zero.uxplayversion -->
   <Package
@@ -48,7 +49,23 @@
                  Guid="e5f23b9b-b726-4738-85ba-63892cff1924">
         <File Id="AppExeFile"
               Source="./release/uxplay-windows.exe"
-              KeyPath="yes" />
+              KeyPath="yes">
+          <!-- Windows otherwise creates a Public-only rule from its first-run
+               prompt; AirPlay must work on every profile. -->
+          <fw:FirewallException Id="AppFirewallException"
+                                Name="uxplay-windows"
+                                Scope="any"
+                                Profile="all" />
+        </File>
+        <!-- Clients discover the server over mDNS. Whichever Bonjour build
+             answers (bundled or Apple's), its replies only happen if the
+             queries get through the firewall. -->
+        <fw:FirewallException Id="MdnsFirewallException"
+                              Name="uxplay-windows mDNS (UDP 5353 In)"
+                              Protocol="udp"
+                              Port="5353"
+                              Scope="localSubnet"
+                              Profile="all" />
       </Component>
     </ComponentGroup>
 
