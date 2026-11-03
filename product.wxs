@@ -52,8 +52,12 @@
               KeyPath="yes">
           <!-- Windows otherwise creates a Public-only rule from its first-run
                prompt; AirPlay must work on every profile. -->
+          <!-- Not plain "uxplay-windows": Windows' first-run prompt creates
+               rules with that exact name, and the extension fails (1603,
+               E_INVALIDARG) when it tries to update one of those instead
+               of creating its own. -->
           <fw:FirewallException Id="AppFirewallException"
-                                Name="uxplay-windows"
+                                Name="uxplay-windows AirPlay"
                                 Scope="any"
                                 Profile="all" />
         </File>
