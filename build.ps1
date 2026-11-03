@@ -248,12 +248,36 @@ function Ensure-BonjourSdk {
         -Architecture $Architecture
 }
 
+# Fixes to the pinned libuxplay commit live in patches/libuxplay-*.patch
+# (generated with `git -C libuxplay diff`) so the submodule needs no fork.
+function Apply-LibuxplayPatches {
+    $git = (Get-Command git -ErrorAction Stop).Source
+    $submodule = Join-Path $projectRoot "libuxplay"
+    $patchDir = Join-Path $projectRoot "patches"
+    if (-not (Test-Path -LiteralPath $patchDir)) { return }
+
+    foreach ($patch in Get-ChildItem -Path $patchDir -Filter "libuxplay-*.patch" | Sort-Object Name) {
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & $git -C $submodule apply --reverse --check $patch.FullName 2>&1 | Out-Null
+        $alreadyApplied = ($LASTEXITCODE -eq 0)
+        $ErrorActionPreference = $previous
+        if ($alreadyApplied) {
+            Write-Host "Patch already applied: $($patch.Name)"
+            continue
+        }
+        Write-Host "Applying patch: $($patch.Name)"
+        Invoke-Native -FilePath $git -Arguments @("-C", $submodule, "apply", "--whitespace=nowarn", $patch.FullName)
+    }
+}
+
 function Build-Application {
     $beaconPython = Get-BeaconPython
     Set-BuildEnvironment
     Assert-BuildTools
     Assert-BeaconPythonPackages -Python $beaconPython
     Ensure-BonjourSdk
+    Apply-LibuxplayPatches
     New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
     $cmake = Join-Path $runtimeBin "cmake.exe"

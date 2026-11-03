@@ -1,0 +1,22 @@
+diff --git a/lib/dnssd.c b/lib/dnssd.c
+index d041ee7..74aad21 100644
+--- a/lib/dnssd.c
++++ b/lib/dnssd.c
+@@ -394,6 +394,17 @@ dnssd_register_airplay(dnssd_t *dnssd, unsigned short port)
+     dnssd->TXTRecordSetValue(&dnssd->airplay_record, "model", strlen(GLOBAL_MODEL), GLOBAL_MODEL);
+     dnssd->TXTRecordSetValue(&dnssd->airplay_record, "pk", strlen(dnssd->pk), dnssd->pk);
+     dnssd->TXTRecordSetValue(&dnssd->airplay_record, "pi", strlen(AIRPLAY_PI), AIRPLAY_PI);
++    /* macOS 26+ senders drop receivers whose _airplay record has no "psi"
++     * (public share identifier) before any network connection is attempted
++     * ("Ignoring device found without pairing ID"). Derive a stable,
++     * per-device UUID-shaped value from the hardware address. */
++    if (dnssd->hw_addr_len >= 6) {
++        const unsigned char *hw = (const unsigned char *) dnssd->hw_addr;
++        char psi[37];
++        snprintf(psi, sizeof(psi), "%02X%02X%02X%02X-%02X%02X-4000-8000-%02X%02X%02X%02X%02X%02X",
++                 hw[0], hw[1], hw[2], hw[3], hw[4], hw[5], hw[0], hw[1], hw[2], hw[3], hw[4], hw[5]);
++        dnssd->TXTRecordSetValue(&dnssd->airplay_record, "psi", strlen(psi), psi);
++    }
+     dnssd->TXTRecordSetValue(&dnssd->airplay_record, "srcvers", strlen(AIRPLAY_SRCVERS), AIRPLAY_SRCVERS);
+     dnssd->TXTRecordSetValue(&dnssd->airplay_record, "vv", strlen(AIRPLAY_VV), AIRPLAY_VV);
+ 
